@@ -1,7 +1,4 @@
-import {
-  BasicExampleFactory,
-  PromptExampleFactory,
-} from "./modules/examples";
+import { BasicExampleFactory, PromptExampleFactory } from "./modules/examples";
 import { getString, initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
@@ -12,7 +9,7 @@ import { createZToolkit } from "./utils/ztoolkit";
  */
 async function onStartup() {
   ztoolkit.log("AlphaXiv Extension: onStartup called");
-  
+
   // Wait for Zotero to be fully initialized
   await Promise.all([
     Zotero.initializationPromise,
@@ -38,9 +35,11 @@ async function onStartup() {
 
   // Mark as initialized
   addon.data.initialized = true;
-  
+
   // Trigger initial sync on startup
-  ztoolkit.log("AlphaXiv Extension: Plugin initialized, triggering initial sync");
+  ztoolkit.log(
+    "AlphaXiv Extension: Plugin initialized, triggering initial sync",
+  );
   try {
     const { syncAllPairs } = await import("./modules/alphaxivSync");
     await syncAllPairs();
@@ -129,7 +128,7 @@ async function onNotify(
   extraData: { [key: string]: any },
 ) {
   ztoolkit.log("notify", event, type, ids, extraData);
-  
+
   // Trigger sync when items are added to collections
   if (event === "add" && type === "collection-item") {
     ztoolkit.log("onNotify: Items added to collection, triggering sync");

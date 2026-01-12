@@ -92,7 +92,6 @@ export class BasicExampleFactory {
  * These commands are accessible via Shift+P in Zotero
  */
 export class PromptExampleFactory {
-
   /**
    * Register the main AlphaXiv sync command
    * Triggers bidirectional sync between Zotero and AlphaXiv
@@ -150,20 +149,20 @@ export class PromptExampleFactory {
         label: "alphaXiv Debug",
         callback: async () => {
           const { getPref } = await import("../utils/prefs");
-          
+
           // Show current configuration
           const config = {
             enabled: getPref("enable"),
             apiKey: getPref("alphaxivApiKey") ? "***SET***" : "***NOT SET***",
             syncPairs: getPref("syncPairs"),
           };
-          
+
           ztoolkit.getGlobal("alert")(
             `AlphaXiv Debug Info:\n\n` +
-            `Enabled: ${config.enabled}\n` +
-            `API Key: ${config.apiKey}\n` +
-            `Sync Pairs: ${config.syncPairs || "***NOT SET***"}\n\n` +
-            `Check Debug Output (Help -> Debug Output Logging -> View Output) for detailed logs.`
+              `Enabled: ${config.enabled}\n` +
+              `API Key: ${config.apiKey}\n` +
+              `Sync Pairs: ${config.syncPairs || "***NOT SET***"}\n\n` +
+              `Check Debug Output (Help -> Debug Output Logging -> View Output) for detailed logs.`,
           );
         },
       },
@@ -181,22 +180,27 @@ export class PromptExampleFactory {
         label: "alphaXiv Test",
         callback: async () => {
           ztoolkit.log("alphaXiv Test: Starting configuration test");
-          
+
           try {
             const { getPref } = await import("../utils/prefs");
             const { syncAllPairs } = await import("../modules/alphaxivSync");
-            
+
             ztoolkit.log("alphaXiv Test: Preferences loaded");
             ztoolkit.log("alphaXiv Test: Enable setting:", getPref("enable"));
-            ztoolkit.log("alphaXiv Test: API Key set:", !!getPref("alphaxivApiKey"));
+            ztoolkit.log(
+              "alphaXiv Test: API Key set:",
+              !!getPref("alphaxivApiKey"),
+            );
             ztoolkit.log("alphaXiv Test: Sync pairs:", getPref("syncPairs"));
-            
+
             // Test sync function call
             ztoolkit.log("alphaXiv Test: Calling syncAllPairs()");
             await syncAllPairs();
             ztoolkit.log("alphaXiv Test: syncAllPairs() completed");
-            
-            ztoolkit.getGlobal("alert")("Test completed! Check debug output for details.");
+
+            ztoolkit.getGlobal("alert")(
+              "Test completed! Check debug output for details.",
+            );
           } catch (e) {
             ztoolkit.log("alphaXiv Test: Error:", e);
             ztoolkit.getGlobal("alert")(`Test failed: ${e}`);
@@ -217,39 +221,43 @@ export class PromptExampleFactory {
         label: "alphaXiv Folders",
         callback: async () => {
           ztoolkit.log("alphaXiv List Folders: Starting");
-          
+
           try {
             const { getPref } = await import("../utils/prefs");
             const apiKey = getPref("alphaxivApiKey").trim();
-            
+
             if (!apiKey) {
-              ztoolkit.getGlobal("alert")("Please set your AlphaXiv API key in preferences first.");
+              ztoolkit.getGlobal("alert")(
+                "Please set your AlphaXiv API key in preferences first.",
+              );
               return;
             }
-            
-            const baseUrl = getPref("alphaxivBaseUrl").trim() || "https://api-dev.alphaxiv.org";
-            
+
+            const baseUrl =
+              getPref("alphaxivBaseUrl").trim() ||
+              "https://api-dev.alphaxiv.org";
+
             // Import AlphaxivClient class
             const { AlphaxivClient } = await import("../modules/alphaxivSync");
             const client = new (AlphaxivClient as any)({ apiKey, baseUrl });
-            
+
             ztoolkit.log("alphaXiv List Folders: Fetching folders from API");
             const folders = await client.listFolders();
-            
+
             ztoolkit.log("alphaXiv List Folders: Retrieved folders:", folders);
-            
+
             let message = `Found ${folders.length} AlphaXiv folders:\n\n`;
             folders.forEach((folder: any, index: number) => {
-              message += `${index + 1}. ${folder.name || 'Unnamed'}\n`;
+              message += `${index + 1}. ${folder.name || "Unnamed"}\n`;
               message += `   ID: ${folder.id}\n\n`;
             });
-            
+
             if (folders.length === 0) {
-              message = "No folders found. Make sure your API key has the correct permissions.";
+              message =
+                "No folders found. Make sure your API key has the correct permissions.";
             }
-            
+
             ztoolkit.getGlobal("alert")(message);
-            
           } catch (e) {
             ztoolkit.log("alphaXiv List Folders: Error:", e);
             ztoolkit.getGlobal("alert")(`Failed to list folders: ${e}`);
@@ -270,19 +278,23 @@ export class PromptExampleFactory {
         label: "alphaXiv Import Test",
         callback: async () => {
           ztoolkit.log("alphaXiv Test Import: Starting smoke test");
-          
+
           try {
             // Test importing a known arXiv paper (use a more recent one)
             const testArxivId = "2312.00001"; // December 2023 paper (without arXiv: prefix to test auto-formatting)
-            
-            ztoolkit.log(`alphaXiv Test Import: Attempting to import ${testArxivId}`);
-            
-            const { importIntoZoteroByArxivId } = await import("../modules/alphaxivSync");
+
+            ztoolkit.log(
+              `alphaXiv Test Import: Attempting to import ${testArxivId}`,
+            );
+
+            const { importIntoZoteroByArxivId } =
+              await import("../modules/alphaxivSync");
             const result = await importIntoZoteroByArxivId(testArxivId);
-            
+
             ztoolkit.log(`alphaXiv Test Import: Import successful:`, result);
-            ztoolkit.getGlobal("alert")(`Successfully imported arXiv paper ${testArxivId}! Check your library.`);
-            
+            ztoolkit.getGlobal("alert")(
+              `Successfully imported arXiv paper ${testArxivId}! Check your library.`,
+            );
           } catch (e) {
             ztoolkit.log("alphaXiv Test Import: Error:", e);
             ztoolkit.getGlobal("alert")(`Import test failed: ${e}`);
@@ -304,116 +316,158 @@ export class PromptExampleFactory {
         label: "alphaXiv Smoke Test",
         callback: async () => {
           ztoolkit.log("alphaXiv Smoke Test: Starting comprehensive test");
-          
+
           const results: string[] = [];
-          
+
           try {
             // Test 1: Test Zotero.Translate.Search with arXiv: prefix
-            ztoolkit.log("Smoke Test 1: Testing Zotero.Translate.Search with arXiv: prefix");
+            ztoolkit.log(
+              "Smoke Test 1: Testing Zotero.Translate.Search with arXiv: prefix",
+            );
             try {
               const translate1 = new Zotero.Translate.Search();
               translate1.setIdentifier("arXiv:2301.00001");
               const translators1 = await translate1.getTranslators();
-              
+
               if (translators1.length > 0) {
-                results.push("✅ Test 1: Zotero.Translate.Search with arXiv: prefix - SUCCESS");
-                ztoolkit.log("Smoke Test 1: Found translators:", translators1.length);
+                results.push(
+                  "✅ Test 1: Zotero.Translate.Search with arXiv: prefix - SUCCESS",
+                );
+                ztoolkit.log(
+                  "Smoke Test 1: Found translators:",
+                  translators1.length,
+                );
               } else {
-                results.push("❌ Test 1: Zotero.Translate.Search with arXiv: prefix - NO TRANSLATORS");
+                results.push(
+                  "❌ Test 1: Zotero.Translate.Search with arXiv: prefix - NO TRANSLATORS",
+                );
               }
             } catch (e) {
-              results.push(`❌ Test 1: Zotero.Translate.Search with arXiv: prefix - FAILED: ${e}`);
+              results.push(
+                `❌ Test 1: Zotero.Translate.Search with arXiv: prefix - FAILED: ${e}`,
+              );
             }
-            
+
             // Test 2: Test Zotero.Translate.Search without arXiv: prefix
-            ztoolkit.log("Smoke Test 2: Testing Zotero.Translate.Search without arXiv: prefix");
+            ztoolkit.log(
+              "Smoke Test 2: Testing Zotero.Translate.Search without arXiv: prefix",
+            );
             try {
               const translate2 = new Zotero.Translate.Search();
               translate2.setIdentifier("2301.00002");
               const translators2 = await translate2.getTranslators();
-              
+
               if (translators2.length > 0) {
-                results.push("✅ Test 2: Zotero.Translate.Search without arXiv: prefix - SUCCESS");
-                ztoolkit.log("Smoke Test 2: Found translators:", translators2.length);
+                results.push(
+                  "✅ Test 2: Zotero.Translate.Search without arXiv: prefix - SUCCESS",
+                );
+                ztoolkit.log(
+                  "Smoke Test 2: Found translators:",
+                  translators2.length,
+                );
               } else {
-                results.push("❌ Test 2: Zotero.Translate.Search without arXiv: prefix - NO TRANSLATORS");
+                results.push(
+                  "❌ Test 2: Zotero.Translate.Search without arXiv: prefix - NO TRANSLATORS",
+                );
               }
             } catch (e) {
-              results.push(`❌ Test 2: Zotero.Translate.Search without arXiv: prefix - FAILED: ${e}`);
+              results.push(
+                `❌ Test 2: Zotero.Translate.Search without arXiv: prefix - FAILED: ${e}`,
+              );
             }
-            
+
             // Test 3: Test arXiv URL with Zotero.Translate.Web
-            ztoolkit.log("Smoke Test 3: Testing arXiv URL with Zotero.Translate.Web");
+            ztoolkit.log(
+              "Smoke Test 3: Testing arXiv URL with Zotero.Translate.Web",
+            );
             try {
               const arxivUrl = "https://arxiv.org/abs/2301.00003";
-              
+
               await new Promise((resolve, reject) => {
-                Zotero.HTTP.processDocuments(
-                  [arxivUrl],
-                  async function(doc) {
-                    try {
-                      const translate3 = new Zotero.Translate.Web();
-                      translate3.setDocument(doc);
-                      const translators3 = await translate3.getTranslators();
-                      
-                      if (translators3.length > 0) {
-                        results.push("✅ Test 3: arXiv URL with Zotero.Translate.Web - SUCCESS");
-                        ztoolkit.log("Smoke Test 3: Found web translators:", translators3.length);
-                      } else {
-                        results.push("❌ Test 3: arXiv URL with Zotero.Translate.Web - NO TRANSLATORS");
-                      }
-                      resolve(true);
-                    } catch (error) {
-                      results.push(`❌ Test 3: arXiv URL with Zotero.Translate.Web - FAILED: ${error}`);
-                      resolve(false);
+                Zotero.HTTP.processDocuments([arxivUrl], async function (doc) {
+                  try {
+                    const translate3 = new Zotero.Translate.Web();
+                    translate3.setDocument(doc);
+                    const translators3 = await translate3.getTranslators();
+
+                    if (translators3.length > 0) {
+                      results.push(
+                        "✅ Test 3: arXiv URL with Zotero.Translate.Web - SUCCESS",
+                      );
+                      ztoolkit.log(
+                        "Smoke Test 3: Found web translators:",
+                        translators3.length,
+                      );
+                    } else {
+                      results.push(
+                        "❌ Test 3: arXiv URL with Zotero.Translate.Web - NO TRANSLATORS",
+                      );
                     }
+                    resolve(true);
+                  } catch (error) {
+                    results.push(
+                      `❌ Test 3: arXiv URL with Zotero.Translate.Web - FAILED: ${error}`,
+                    );
+                    resolve(false);
                   }
-                );
+                });
               });
             } catch (e) {
-              results.push(`❌ Test 3: arXiv URL with Zotero.Translate.Web - FAILED: ${e}`);
+              results.push(
+                `❌ Test 3: arXiv URL with Zotero.Translate.Web - FAILED: ${e}`,
+              );
             }
-            
+
             // Test 4: Test our import function
-            ztoolkit.log("Smoke Test 4: Testing our importIntoZoteroByArxivId function");
+            ztoolkit.log(
+              "Smoke Test 4: Testing our importIntoZoteroByArxivId function",
+            );
             try {
-              const { importIntoZoteroByArxivId } = await import("../modules/alphaxivSync");
+              const { importIntoZoteroByArxivId } =
+                await import("../modules/alphaxivSync");
               await importIntoZoteroByArxivId("2301.00004");
-              results.push("✅ Test 4: importIntoZoteroByArxivId function - SUCCESS");
+              results.push(
+                "✅ Test 4: importIntoZoteroByArxivId function - SUCCESS",
+              );
             } catch (e) {
-              results.push(`❌ Test 4: importIntoZoteroByArxivId function - FAILED: ${e}`);
+              results.push(
+                `❌ Test 4: importIntoZoteroByArxivId function - FAILED: ${e}`,
+              );
             }
-            
+
             // Test 5: Test AlphaXiv API connection
             ztoolkit.log("Smoke Test 5: Testing AlphaXiv API");
             try {
               const { getPref } = await import("../utils/prefs");
-              const { AlphaxivClient } = await import("../modules/alphaxivSync");
-              
+              const { AlphaxivClient } =
+                await import("../modules/alphaxivSync");
+
               const apiKey = getPref("alphaxivApiKey").trim();
               if (!apiKey) {
                 results.push("⚠️ Test 5: AlphaXiv API - SKIPPED (no API key)");
               } else {
                 const client = new (AlphaxivClient as any)({ apiKey });
                 const folders = await client.listFolders();
-                results.push(`✅ Test 5: AlphaXiv API - SUCCESS (${folders.length} folders)`);
+                results.push(
+                  `✅ Test 5: AlphaXiv API - SUCCESS (${folders.length} folders)`,
+                );
               }
             } catch (e) {
               results.push(`❌ Test 5: AlphaXiv API - FAILED: ${e}`);
             }
-            
+
             // Show results
             const summary = results.join("\n");
             ztoolkit.log("alphaXiv Smoke Test: Results:", results);
             ztoolkit.getGlobal("alert")(`Smoke Test Results:\n\n${summary}`);
-            
           } catch (e) {
             ztoolkit.log("alphaXiv Smoke Test: Critical error:", e);
-            ztoolkit.getGlobal("alert")(`Smoke test failed with critical error: ${e}`);
+            ztoolkit.getGlobal("alert")(
+              `Smoke test failed with critical error: ${e}`,
+            );
           }
         },
       },
     ]);
   }
-
 }
