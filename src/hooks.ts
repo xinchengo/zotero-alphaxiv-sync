@@ -1,17 +1,19 @@
 import {
   BasicExampleFactory,
-  HelperExampleFactory,
-  KeyExampleFactory,
   PromptExampleFactory,
-  UIExampleFactory,
 } from "./modules/examples";
 import { getString, initLocale } from "./utils/locale";
 import { registerPrefsScripts } from "./modules/preferenceScript";
 import { createZToolkit } from "./utils/ztoolkit";
 
+/**
+ * Main startup hook
+ * Initializes the extension and registers core functionality
+ */
 async function onStartup() {
   ztoolkit.log("AlphaXiv Extension: onStartup called");
   
+  // Wait for Zotero to be fully initialized
   await Promise.all([
     Zotero.initializationPromise,
     Zotero.unlockPromise,
@@ -20,30 +22,21 @@ async function onStartup() {
 
   ztoolkit.log("AlphaXiv Extension: Zotero ready, initializing extension");
 
+  // Initialize localization
   initLocale();
 
+  // Register preferences pane
   BasicExampleFactory.registerPrefs();
 
+  // Register notifier for monitoring Zotero events
   BasicExampleFactory.registerNotifier();
 
-  KeyExampleFactory.registerShortcuts();
-
-  await UIExampleFactory.registerExtraColumn();
-
-  await UIExampleFactory.registerExtraColumnWithCustomCell();
-
-  UIExampleFactory.registerItemPaneCustomInfoRow();
-
-  UIExampleFactory.registerItemPaneSection();
-
-  UIExampleFactory.registerReaderItemPaneSection();
-
+  // Initialize all main windows
   await Promise.all(
     Zotero.getMainWindows().map((win) => onMainWindowLoad(win)),
   );
 
-  // Mark initialized as true to confirm plugin loading status
-  // outside of the plugin (e.g. scaffold testing process)
+  // Mark as initialized
   addon.data.initialized = true;
   
   // Trigger initial sync on startup
@@ -56,14 +49,20 @@ async function onStartup() {
   }
 }
 
+/**
+ * Main window load hook
+ * Sets up UI elements and commands for each Zotero window
+ */
 async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
   // Create ztoolkit for every window
   addon.data.ztoolkit = createZToolkit();
 
+  // Insert localization file
   win.MozXULElement.insertFTLIfNeeded(
     `${addon.data.config.addonRef}-mainWindow.ftl`,
   );
 
+  // Show startup notification
   const popupWin = new ztoolkit.ProgressWindow(addon.data.config.addonName, {
     closeOnClick: true,
     closeTime: -1,
@@ -81,31 +80,13 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     text: `[30%] ${getString("startup-begin")}`,
   });
 
-  UIExampleFactory.registerStyleSheet(win);
-
-  UIExampleFactory.registerRightClickMenuItem();
-
-  UIExampleFactory.registerRightClickMenuPopup(win);
-
-  UIExampleFactory.registerWindowMenuWithSeparator();
-
-  PromptExampleFactory.registerNormalCommandExample();
-
+  // Register AlphaXiv commands
   PromptExampleFactory.registerAlphaxivSyncCommand();
-
   PromptExampleFactory.registerAlphaxivDebugCommand();
-
   PromptExampleFactory.registerAlphaxivTestCommand();
-
   PromptExampleFactory.registerAlphaxivListFoldersCommand();
-
   PromptExampleFactory.registerAlphaxivTestImportCommand();
-
   PromptExampleFactory.registerAlphaxivSmokeTestCommand();
-
-  PromptExampleFactory.registerAnonymousCommandExample(win);
-
-  PromptExampleFactory.registerConditionalCommandExample();
 
   await Zotero.Promise.delay(1000);
 
@@ -114,27 +95,32 @@ async function onMainWindowLoad(win: _ZoteroTypes.MainWindow): Promise<void> {
     text: `[100%] ${getString("startup-finish")}`,
   });
   popupWin.startCloseTimer(5000);
-
-  addon.hooks.onDialogEvents("dialogExample");
 }
 
+/**
+ * Main window unload hook
+ * Cleanup when a window is closed
+ */
 async function onMainWindowUnload(win: Window): Promise<void> {
   ztoolkit.unregisterAll();
   addon.data.dialog?.window?.close();
 }
 
+/**
+ * Shutdown hook
+ * Cleanup when the extension is disabled or Zotero closes
+ */
 function onShutdown(): void {
   ztoolkit.unregisterAll();
   addon.data.dialog?.window?.close();
-  // Remove addon object
   addon.data.alive = false;
   // @ts-expect-error - Plugin instance is not typed
   delete Zotero[addon.data.config.addonInstance];
 }
 
 /**
- * This function is just an example of dispatcher for Notify events.
- * Any operations should be placed in a function to keep this funcion clear.
+ * Notifier event dispatcher
+ * Handles events from Zotero (item changes, tab changes, etc.)
  */
 async function onNotify(
   event: string,
@@ -142,7 +128,6 @@ async function onNotify(
   ids: Array<string | number>,
   extraData: { [key: string]: any },
 ) {
-  // You can add your code to the corresponding notify type
   ztoolkit.log("notify", event, type, ids, extraData);
   
   // Trigger sync when items are added to collections
@@ -155,23 +140,11 @@ async function onNotify(
       ztoolkit.log("onNotify: Auto-sync failed:", e);
     }
   }
-  
-  if (
-    event == "select" &&
-    type == "tab" &&
-    extraData[ids[0]].type == "reader"
-  ) {
-    BasicExampleFactory.exampleNotifierCallback();
-  } else {
-    return;
-  }
 }
 
 /**
- * This function is just an example of dispatcher for Preference UI events.
- * Any operations should be placed in a function to keep this funcion clear.
- * @param type event type
- * @param data event data
+ * Preferences event dispatcher
+ * Handles events from the preferences UI
  */
 async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   switch (type) {
@@ -183,45 +156,7 @@ async function onPrefsEvent(type: string, data: { [key: string]: any }) {
   }
 }
 
-function onShortcuts(type: string) {
-  switch (type) {
-    case "larger":
-      KeyExampleFactory.exampleShortcutLargerCallback();
-      break;
-    case "smaller":
-      KeyExampleFactory.exampleShortcutSmallerCallback();
-      break;
-    default:
-      break;
-  }
-}
-
-function onDialogEvents(type: string) {
-  switch (type) {
-    case "dialogExample":
-      HelperExampleFactory.dialogExample();
-      break;
-    case "clipboardExample":
-      HelperExampleFactory.clipboardExample();
-      break;
-    case "filePickerExample":
-      HelperExampleFactory.filePickerExample();
-      break;
-    case "progressWindowExample":
-      HelperExampleFactory.progressWindowExample();
-      break;
-    case "vtableExample":
-      HelperExampleFactory.vtableExample();
-      break;
-    default:
-      break;
-  }
-}
-
-// Add your hooks here. For element click, etc.
-// Keep in mind hooks only do dispatch. Don't add code that does real jobs in hooks.
-// Otherwise the code would be hard to read and maintain.
-
+// Export all hooks
 export default {
   onStartup,
   onShutdown,
@@ -229,6 +164,4 @@ export default {
   onMainWindowUnload,
   onNotify,
   onPrefsEvent,
-  onShortcuts,
-  onDialogEvents,
 };

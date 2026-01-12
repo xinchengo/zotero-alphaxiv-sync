@@ -1,21 +1,36 @@
 import { getPref } from "../utils/prefs";
 
+/**
+ * Represents a sync pair configuration
+ * Maps a Zotero collection to an AlphaXiv folder for bidirectional sync
+ */
 type SyncPair = {
   zoteroLibraryID: number;
   zoteroCollectionKey: string;
   alphaxivFolderId: string;
 };
 
+/**
+ * Represents a paper in an AlphaXiv folder
+ */
 type AlphaxivFolderPaper = {
   paperGroupId?: string;
   universalPaperId?: string;
 };
 
+/**
+ * Represents an AlphaXiv folder
+ */
 type AlphaxivFolder = {
   id: string;
   name?: string;
 };
 
+/**
+ * Parse sync pairs from preferences
+ * Expected format: JSON array of SyncPair objects
+ * @returns Array of valid sync pairs
+ */
 function parseSyncPairs(): SyncPair[] {
   const raw = getPref("syncPairs").trim();
   ztoolkit.log("parseSyncPairs: Raw syncPairs preference:", raw);
@@ -73,6 +88,12 @@ function parseSyncPairs(): SyncPair[] {
   return result;
 }
 
+/**
+ * Extract arXiv ID from a Zotero item
+ * Checks multiple fields: archiveLocation, url, extra, DOI
+ * @param item Zotero item to extract arXiv ID from
+ * @returns arXiv ID if found, null otherwise
+ */
 function getArxivIdFromItem(item: Zotero.Item): string | null {
   const fields = ["archiveLocation", "url", "extra", "DOI"] as const;
   ztoolkit.log(`getArxivIdFromItem: Processing item ${item.id} - ${item.getField("title")}`);
@@ -96,6 +117,15 @@ function getArxivIdFromItem(item: Zotero.Item): string | null {
   return null;
 }
 
+/**
+ * Extract arXiv ID from text
+ * Supports multiple formats:
+ * - Direct ID: 2301.12345
+ * - URL: arxiv.org/abs/2301.12345
+ * - Prefix: arXiv:2301.12345
+ * @param text Text to search for arXiv ID
+ * @returns Normalized arXiv ID (without version) or null
+ */
 function extractArxivId(text: string): string | null {
   const normalized = text.trim();
   const m1 = normalized.match(/\b(\d{4}\.\d{4,5})(v\d+)?\b/i);
@@ -109,6 +139,10 @@ function extractArxivId(text: string): string | null {
   return null;
 }
 
+/**
+ * Client for interacting with the AlphaXiv API
+ * Handles authentication and API requests
+ */
 class AlphaxivClient {
   private apiKey: string;
   private baseUrl: string;
@@ -120,6 +154,13 @@ class AlphaxivClient {
       .replace(/\/+$/, "");
   }
 
+  /**
+   * Make an authenticated JSON request to the AlphaXiv API
+   * @param method HTTP method
+   * @param path API path
+   * @param body Optional request body
+   * @returns Parsed JSON response
+   */
   private async requestJson<T>(
     method: string,
     path: string,
@@ -196,6 +237,14 @@ class AlphaxivClient {
   }
 }
 
+/**
+ * Import an arXiv paper into Zotero by its arXiv ID
+ * Uses Zotero's web translator to fetch metadata from arxiv.org
+ * @param arxivId arXiv ID (with or without "arXiv:" prefix)
+ * @param collectionKey Optional collection to add the item to
+ * @param libraryID Optional library ID (defaults to user library)
+ * @returns Array of imported items
+ */
 async function importIntoZoteroByArxivId(arxivId: string, collectionKey?: string, libraryID?: number) {
   ztoolkit.log(`importIntoZoteroByArxivId: Attempting to import ${arxivId}`);
   
@@ -261,6 +310,11 @@ async function importIntoZoteroByArxivId(arxivId: string, collectionKey?: string
   }
 }
 
+/**
+ * Get all regular items from a Zotero collection
+ * @param pair Sync pair containing collection information
+ * @returns Array of regular (non-attachment) items
+ */
 async function getCollectionItemsForPair(
   pair: SyncPair,
 ): Promise<Zotero.Item[]> {
@@ -288,6 +342,11 @@ async function getCollectionItemsForPair(
   return regularItems;
 }
 
+/**
+ * Main sync function
+ * Performs bidirectional sync for all configured sync pairs
+ * Syncs arXiv papers between Zotero collections and AlphaXiv folders
+ */
 export async function syncAllPairs() {
   ztoolkit.log("syncAllPairs: Starting sync process");
   
